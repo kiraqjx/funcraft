@@ -19,18 +19,28 @@ class ApiInvoke extends Invoke {
 
   async init() {
     await super.init();
-
     this.envs = await docker.generateDockerEnvs(this.baseDir, this.serviceName, this.serviceRes.Properties, this.functionName, this.functionProps, this.debugPort, null, this.nasConfig, true, this.debugIde, this.debugArgs);
-    this.cmd = docker.generateDockerCmd(this.runtime, false, {
-      functionProps: this.functionProps,
-      httpMode: true
-    });
   }
 
   async doInvoke(req, res) {
-
     const containerName = docker.generateRamdomContainerName();
     const event = await getHttpRawBody(req);
+
+    if (this.functionProps.Initializer) {
+      this.cmd = docker.generateDockerCmd(this.runtime, false, {
+        functionProps: this.functionProps,
+        httpMode: true,
+        invokeInitializer: true,
+        event
+      });
+    } else {
+      this.cmd = docker.generateDockerCmd(this.runtime, false, {
+        functionProps: this.functionProps,
+        httpMode: true,
+        invokeInitializer: false,
+        event
+      });
+    }
 
     const outputStream = new streams.WritableStream();
     const errorStream = new streams.WritableStream();
